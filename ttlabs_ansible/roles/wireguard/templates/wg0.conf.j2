@@ -1,0 +1,14 @@
+[Interface]
+Address = {{ host_ip }}/24
+ListenPort = {{ vpn_listen_port }}
+PrivateKey = {{ wg_private_key }}
+
+{% for peer in vpn_peers %}
+{% if peer.name != inventory_hostname and 'index' in peer %}
+[Peer]
+PublicKey = {{ peer.public_key }}
+AllowedIPs = {{ vpn_network_cidr.split('.')[0:3] | join('.') }}.{{ peer.index | int + 10 }}/32
+{% endif %}
+{% endfor %}
+
+

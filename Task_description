@@ -1,0 +1,173 @@
+TT Labs test assignment
+
+Objective
+Design and implement a small, private infrastructure in Google Cloud Platform
+(GCP) demonstrating your ability to:
+Provision infrastructure using Terraform
+Work with public cloud concepts in a provider-agnostic way
+Configure Linux networking and host-level firewalls
+Set up and operate a WireGuard VPN
+Deploy Dockerized services
+Use Ansible for configuration management
+Build a basic CI/CD workflow using GitHub Actions
+The core requirement is that all application and monitoring services are
+accessible only through a VPN network.
+⚠️ Important Note on Scope & Expectations
+This task is intentionally broad and reflects real platform work with frequent
+context switches.
+You are NOT expected to complete everything perfectly.
+Partial completion is explicitly acceptable
+Correct reasoning, security awareness, and explanations matter more than
+completeness
+If you run out of time, document what you would do next
+Trade-offs and assumptions are welcome — please explain them
+We evaluate how you think, not how much you automate.
+
+1. Repository
+
+TT Labs test assignment 1
+
+Create a GitHub repository
+Organize Terraform, Ansible, and configuration code clearly
+Include a README describing:
+Architecture overview
+Security model
+Assumptions and trade-offs
+Validation steps
+
+2. Infrastructure Provisioning (Terraform)
+Provision resources in an existing GCP project.
+Use GCS bucket as a remote state backend for Terraform. Backend configuration
+should be included in the repository.
+Networking
+One VPC
+One subnet:
+Region: europe-west2
+CIDR: 10.22.0.0/24
+Compute
+Create three Linux virtual machines:
+vpn
+db
+mon
+Each VM must:
+Use a machine type with 2 vCPU / 8 GB RAM
+Use Debian 12 OS
+
+TT Labs test assignment 2
+
+Be attached to the subnet above
+Should have internet access
+Access
+SSH access must be possible on all servers
+SSH must use a non-standard port
+
+3. VPN Connectivity (WireGuard)
+Requirements
+Establish a WireGuard VPN
+WireGuard network CIDR: 10.0.0.0/24
+All three VMs must participate
+All inter-service communication must occur over the VPN
+VPN Clients
+Create WireGuard peer configurations for:
+Yourself
+The reviewer
+Both must be able to:
+Connect to the VPN
+Access permitted services according to firewall rules
+Peer configuration may be manual or automated.
+
+4. Firewalling & Network Policy (IMPORTANT)
+Key clarification
+Cloud firewalls are not used to control traffic inside the WireGuard network.
+
+TT Labs test assignment 3
+
+WireGuard traffic is encrypted and encapsulated, so host-level firewalling is
+required.
+You must implement firewall rules using iptables or nftables on each VM.
+Required behavior
+VPN host ( vpn )
+Can communicate with any host in the WireGuard network
+Acts as a VPN gateway for users
+SSH accessible publicly on a non-standard port
+Monitoring host ( mon )
+Grafana accessible to VPN users
+Prometheus can scrape exporters over VPN
+SSH accessible publicly on a non-standard port
+Database host ( db )
+PostgreSQL and Redis:
+Accessible to VPN users
+PostgreSQL exporter and Redis exporter:
+Accessible only from the monitoring host
+SSH accessible publicly on a non-standard port
+General firewall requirements
+No application or monitoring service may be exposed publicly
+Firewall rules must:
+Be implemented at the host level
+Persist across reboots
+Follow least-privilege principles
+
+TT Labs test assignment 4
+
+Be explained in the README
+
+5. Configuration Management (Ansible)
+You may use Ansible to manage:
+Firewall configuration
+VPN setup
+Software installation
+Service deployment
+Inventory
+Must be defined in YAML
+Hosts grouped logically
+Suggested roles:
+wireguard-server
+database
+monitoring
+Exact structure is flexible if justified.
+
+6. Database & Cache Stack
+On the db VM, deploy a Docker Compose stack containing:
+PostgreSQL
+PostgreSQL exporter
+Redis
+Redis exporter
+Requirements
+Services must bind only to the WireGuard interface
+
+TT Labs test assignment 5
+
+Exporters must not be accessible to VPN users
+Configuration should be reproducible
+If time is limited, focus on PostgreSQL + exporter first and document the rest.
+
+7. Monitoring Stack
+On the mon VM, deploy:
+Prometheus
+Grafana
+Requirements
+Prometheus scrapes exporters over VPN
+Grafana accessible to VPN users
+No public exposure of monitoring services
+If time is limited, basic Prometheus scraping is sufficient.
+
+8. Automation (CI/CD)
+Create a GitHub Actions workflow that:
+Runs Ansible playbooks
+Deploys or updates services
+Terraform automation in CI/CD is not required.
+
+9. Validation
+Document how to verify:
+VPN connectivity
+Firewall enforcement
+Service access restrictions
+
+TT Labs test assignment 6
+
+Monitoring data collection
+
+10. Submission
+At the end of the task, send the reviewer:
+1. GitHub repository URL
+2. WireGuard client configuration file for reviewer

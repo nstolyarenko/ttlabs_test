@@ -1,0 +1,58 @@
+---
+- name: Install WireGuard
+  ansible.builtin.package:
+    name: wireguard
+    state: present
+
+- name: Create WireGuard directory
+  ansible.builtin.file:
+    path: /etc/wireguard
+    state: directory
+    mode: '0700'
+
+- name: Ensure key directory exists locally
+  ansible.builtin.file:
+    path: "{{ wg_key_dir }}"
+    state: directory
+    mode: '0700'
+  delegate_to: localhost
+  run_once: true
+  become: false
+  vars:
+    wg_key_dir: "./keys"
+
+- name: Generate private key if not exists
+  ansible.builtin.shell: |
+    mkdir -p {{ wg_key_dir }}
+    wg genkey | tee {{ wg_key_dir }}/{{ inventory_hostname }}.key | wg pubkey > {{ wg_key_dir }}/{{ inventory_hostname }}.pub
+  args:
+    creates: "{{ wg_key_dir }}/{{ inventory_hostname }}.key"
+  delegate_to: localhost
+  run_once: false
+  become: false
+  vars:
+    wg_key_dir: "./keys"
+
+- name: Set host private key
+  set_fact:
+    wg_private_key: "{{ lookup('file', wg_key_dir + '/' + inventory_hostname + '.key') }}"
+  vars:
+    wg_key_dir: "./keys"
+
+- name: Set host VPN IP
+  set_fact:
+    host_ip: "{{ vpn_network_cidr.split('.')[0:3] | join('.') }}.{{ host_index | int + 10 }}"
+
+- name: Generate WireGuard config
+  ansible.builtin.template:
+    src: wg0.conf.j2
+    dest: /etc/wireguard/wg0.conf
+    mode: '0600'
+  vars:
+    wg_key_dir: "./keys"
+
+- name: Enable and start WireGuard
+  ansible.builtin.systemd:
+    name: wg-quick@wg0
+    enabled: yes
+    state: started

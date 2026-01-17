@@ -1,0 +1,20 @@
+- name: Install Docker
+  ansible.builtin.package:
+    name:
+      - docker.io
+      - docker-compose
+    state: present
+
+- name: Deploy Docker Compose file
+  ansible.builtin.copy:
+    src: docker-compose.yml   # this file should be in roles/database/files/
+    dest: /home/{{ ansible_user }}/docker-compose.yml
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+
+- name: Start Docker Compose stack
+  ansible.builtin.command:
+    cmd: docker-compose up -d
+    chdir: /home/{{ ansible_user }}
+    creates: /home/{{ ansible_user }}/docker-compose.yml

@@ -1,0 +1,32 @@
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT ACCEPT [0:0]
+
+-A INPUT -i lo -j ACCEPT
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+-A INPUT -p tcp --dport {{ ssh_port }} -j ACCEPT
+
+{% if inventory_hostname == 'db' %}
+-A INPUT -p tcp --dport 5432 -j ACCEPT
+-A INPUT -p tcp --dport 6379 -j ACCEPT
+
+{% set vpn_subnet = '10.0.0.0/24' %}
+-A INPUT -s {{ vpn_subnet }} -p tcp --dport 9187 -j ACCEPT
+-A INPUT -s {{ vpn_subnet }} -p tcp --dport 9121 -j ACCEPT
+
+
+-A INPUT -p tcp --dport 9187 -j DROP
+-A INPUT -p tcp --dport 9121 -j DROP
+{% endif %}
+
+{% if inventory_hostname == 'mon' %}
+-A INPUT -p tcp --dport 3000 -j ACCEPT
+-A INPUT -p tcp --dport 9090 -j ACCEPT
+{% endif %}
+
+{% if inventory_hostname == 'vpn' %}
+-A INPUT -j ACCEPT
+{% endif %}
+
+COMMIT

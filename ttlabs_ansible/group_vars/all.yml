@@ -1,0 +1,25 @@
+vpn_network_cidr: "10.0.0.0/24"
+vpn_listen_port: 51820
+ssh_port: 2222
+vpn_peers:
+  # - name: reviewer
+  #   public_key: "<reviewer_pub_key>"
+  #   allowed_ips: "10.0.0.0/24"
+  - name: mykola
+    public_key: ~/.ssh/id_rsa_test
+    allowed_ips: "10.0.0.0/24"
+  - name: vpn
+    index: 0
+    public_key: "{{ lookup('file', wg_key_dir + '/vpn.pub') }}"
+  - name: db
+    index: 1
+    public_key: "{{ lookup('file', wg_key_dir + '/db.pub') }}"
+  - name: mon
+    index: 2
+    public_key: "{{ lookup('file', wg_key_dir + '/mon.pub') }}"
+host_index: >
+  {% if inventory_hostname == 'vpn' %}0
+  {% elif inventory_hostname == 'db' %}1
+  {% elif inventory_hostname == 'mon' %}2
+  {% else %}10{% endif %}
+

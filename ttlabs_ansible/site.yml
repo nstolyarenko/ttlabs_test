@@ -1,0 +1,105 @@
+- hosts: all
+  become: yes
+  roles:
+    - wireguard
+    - firewall
+
+- hosts: db
+  become: yes
+  roles:
+    - database
+
+- hosts: mon
+  become: yes
+  roles:
+    - monitoring
+
+- hosts: all
+  become: yes
+  gather_facts: yes
+  tasks:
+    - name: Check VPN TCP connectivity on port 2222
+      ansible.builtin.wait_for:
+        host: "{{ item }}"
+        port: 2222
+        timeout: 3
+      loop:
+        - 10.0.0.11
+        - 10.0.0.12
+        - 10.0.0.13
+      register: tcp_check
+      failed_when: false
+
+# Verification play for Grafana access
+- hosts: mon
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Check Grafana web UI
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:3000"
+        status_code: 200
+      register: grafana_up
+      retries: 5
+      delay: 5
+      until: grafana_up.status == 200
+
+
+    - name: Show Grafana accessibility
+      ansible.builtin.debug:
+        msg: "Grafana is reachable via VPN"
+
+    # ------------------------------
+    # Additional checks for DB
+    # ------------------------------
+    - name: Check PostgreSQL port accessible from VPN
+      ansible.builtin.wait_for:
+        host: 10.0.0.11
+        port: 5432
+        timeout: 3
+      register: pg_port
+      failed_when: false
+
+    - name: Show PostgreSQL VPN accessibility
+      ansible.builtin.debug:
+        msg: "PostgreSQL is reachable from VPN if pg_port.elapsed < 3 else PostgreSQL is NOT reachable from VPN"
+
+    - name: Check Redis port accessible from VPN
+      ansible.builtin.wait_for:
+        host: 10.0.0.13
+        port: 6379
+        timeout: 3
+      register: redis_port
+      failed_when: false
+
+    - name: Show Redis VPN accessibility
+      ansible.builtin.debug:
+        msg: "Redis is reachable from VPN if redis_port.elapsed < 3 else Redis is NOT reachable from VPN"
+
+    - name: Check PostgreSQL exporter accessible from monitoring host
+      ansible.builtin.uri:
+        url: "http://10.0.0.11:9187/metrics"   # monitoring host IP
+        status_code: 200
+      register: pg_exporter
+      retries: 3
+      delay: 2
+      until: pg_exporter.status == 200
+      failed_when: pg_exporter.status != 200
+
+    - name: Show PostgreSQL exporter accessibility
+      ansible.builtin.debug:
+        msg: "PostgreSQL exporter is reachable from monitoring host"
+
+    - name: Check Redis exporter accessible from monitoring host
+      ansible.builtin.uri:
+        url: "http://10.0.0.11:9121/metrics"   # monitoring host IP
+        status_code: 200
+      register: redis_exporter
+      retries: 3
+      delay: 2
+      until: redis_exporter.status == 200
+      failed_when: redis_exporter.status != 200
+
+    - name: Show Redis exporter accessibility
+      ansible.builtin.debug:
+        msg: "Redis exporter is reachable from monitoring host"

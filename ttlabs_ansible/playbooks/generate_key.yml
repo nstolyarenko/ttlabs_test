@@ -1,0 +1,22 @@
+- hosts: all
+  gather_facts: no
+  vars:
+    wg_key_dir: "./keys"   # local folder to store keys
+  tasks:
+    - name: Ensure key directory exists locally
+      local_action:
+        module: file
+        path: "{{ wg_key_dir }}"
+        state: directory
+        mode: '0700'
+
+    - name: Generate WireGuard key pair
+      local_action:
+        module: shell
+        cmd: |
+          mkdir -p {{ wg_key_dir }}
+          wg genkey | tee {{ wg_key_dir }}/{{ inventory_hostname }}.key | wg pubkey > {{ wg_key_dir }}/{{ inventory_hostname }}.pub
+      args:
+        creates: "{{ wg_key_dir }}/{{ inventory_hostname }}.key"
+
+
