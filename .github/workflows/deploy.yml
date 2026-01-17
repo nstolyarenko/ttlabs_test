@@ -35,6 +35,7 @@ jobs:
 
     - name: Run Ansible playbook
       run: |
+        cd ttlabs_ansible && \
         ansible-playbook -i inventory.yml site.yml \
           --ssh-extra-args="-o StrictHostKeyChecking=no" \
           -v
