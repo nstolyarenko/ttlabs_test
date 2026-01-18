@@ -38,13 +38,22 @@
     creates: "{{ playbook_dir }}/keys/{{ inventory_hostname }}.pub"
 
 
-- name: Set host private key
-  set_fact:
-    wg_private_key: "{{ lookup('file', playbook_dir + '/keys/' + inventory_hostname + '.key') }}"
+- name: Read private key from controller
+  ansible.builtin.slurp:
+    src: "{{ playbook_dir }}/keys/{{ inventory_hostname }}.key"
+  delegate_to: localhost
+  register: wg_private_key_raw
 
-- name: Set host public key
-  set_fact:
-    wg_public_key: "{{ lookup('file', playbook_dir + '/keys/' + inventory_hostname + '.pub') }}"
+- name: Read public key from controller
+  ansible.builtin.slurp:
+    src: "{{ playbook_dir }}/keys/{{ inventory_hostname }}.pub"
+  delegate_to: localhost
+  register: wg_public_key_raw
+
+- name: Set WireGuard key facts
+  ansible.builtin.set_fact:
+    wg_private_key: "{{ wg_private_key_raw.content | b64decode | trim }}"
+    wg_public_key: "{{ wg_public_key_raw.content | b64decode | trim }}"
 
 - name: Set host VPN IP
   set_fact:
