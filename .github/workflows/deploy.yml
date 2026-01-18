@@ -32,10 +32,13 @@ jobs:
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+    
+    - name: Generate keys
+      run: |
+       cd ttlabs_ansible && ansible-playbook -i inventory.yml playbooks/generate_keys.yml
 
     - name: Run Ansible playbook
       run: |
-        cd ttlabs_ansible && \
         ansible-playbook -i inventory.yml site.yml \
           --ssh-extra-args="-o StrictHostKeyChecking=no" \
           -v
