@@ -35,7 +35,7 @@ jobs:
     
     - name: Generate keys
       run: |
-       cd ttlabs_ansible && ansible-playbook -i inventory.yml playbooks/generate_keys.yml
+       cd ttlabs_ansible && ansible-playbook -i inventory.yml playbooks/generate_key.yml
 
     - name: Run Ansible playbook
       run: |
