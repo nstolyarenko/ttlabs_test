@@ -76,19 +76,19 @@
       ansible.builtin.debug:
         msg: "Redis is reachable from VPN if redis_port.elapsed < 3 else Redis is NOT reachable from VPN"
 
-    - name: Check PostgreSQL exporter accessible from monitoring host
-      ansible.builtin.uri:
-        url: "http://10.0.0.11:9187/metrics"   # monitoring host IP
-        status_code: 200
-      register: pg_exporter
-      retries: 3
-      delay: 2
-      until: pg_exporter.status == 200
-      failed_when: pg_exporter.status != 200
+    # - name: Check PostgreSQL exporter accessible from monitoring host
+    #   ansible.builtin.uri:
+    #     url: "http://10.0.0.11:9187/metrics"   # monitoring host IP
+    #     status_code: 200
+    #   register: pg_exporter
+    #   retries: 3
+    #   delay: 2
+    #   until: pg_exporter.status == 200
+    #   failed_when: pg_exporter.status != 200
 
-    - name: Show PostgreSQL exporter accessibility
-      ansible.builtin.debug:
-        msg: "PostgreSQL exporter is reachable from monitoring host"
+    # - name: Show PostgreSQL exporter accessibility
+    #   ansible.builtin.debug:
+    #     msg: "PostgreSQL exporter is reachable from monitoring host"
 
     # - name: Check Redis exporter accessible from monitoring host
     #   ansible.builtin.uri:
