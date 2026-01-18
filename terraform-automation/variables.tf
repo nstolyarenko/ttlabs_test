@@ -24,5 +24,5 @@ variable "ssh_port" {
 variable "ssh_cidr" {
   description = "Allowed CIDR blocks for SSH"
   type        = list(string)
-  default     = ["95.111.15.207/32"]
+  default     = ["0.0.0.0/0"]
 }
