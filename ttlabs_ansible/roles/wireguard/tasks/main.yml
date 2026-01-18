@@ -37,7 +37,6 @@
   args:
     creates: "{{ playbook_dir }}/keys/{{ inventory_hostname }}.pub"
 
-
 - name: Read private key from controller
   ansible.builtin.slurp:
     src: "{{ playbook_dir }}/keys/{{ inventory_hostname }}.key"
