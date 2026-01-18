@@ -32,10 +32,6 @@ jobs:
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
-    
-    - name: Generate keys
-      run: |
-       cd ttlabs_ansible && ansible-playbook -i inventory.yml playbooks/generate_key.yml
 
     - name: Run Ansible playbook
       run: |

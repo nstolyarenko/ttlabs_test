@@ -4,34 +4,37 @@
     name: wireguard
     state: present
 
-- name: Create WireGuard directory
+- name: Create WireGuard directory on hosts
   ansible.builtin.file:
     path: /etc/wireguard
     state: directory
     mode: '0700'
+  become: true
 
-- name: Ensure key directory exists locally
-  ansible.builtin.file:
-    path: "{{ wg_key_dir }}"
-    state: directory
-    mode: '0700'
+- name: Ensure local WireGuard key directory exists
   delegate_to: localhost
   run_once: true
-  become: false
-  vars:
-    wg_key_dir: "./keys"
+  ansible.builtin.file:
+    path: "./keys"
+    state: directory
+    mode: '0700'
 
-- name: Generate private key if not exists
-  ansible.builtin.shell: |
-    mkdir -p {{ wg_key_dir }}
-    wg genkey | tee {{ wg_key_dir }}/{{ inventory_hostname }}.key | wg pubkey > {{ wg_key_dir }}/{{ inventory_hostname }}.pub
-  args:
-    creates: "{{ wg_key_dir }}/{{ inventory_hostname }}.key"
+- name: Generate WireGuard private key (local, CI-safe)
   delegate_to: localhost
-  run_once: false
-  become: false
-  vars:
-    wg_key_dir: "./keys"
+  ansible.builtin.shell: |
+    umask 077
+    openssl rand -base64 32 > ./keys/{{ inventory_hostname }}.key
+  args:
+    creates: "./keys/{{ inventory_hostname }}.key"
+
+- name: Generate WireGuard public key (local, CI-safe)
+  delegate_to: localhost
+  ansible.builtin.shell: |
+    base64 -d ./keys/{{ inventory_hostname }}.key | \
+    openssl pkey -pubout -inform DER -outform DER 2>/dev/null | \
+    base64 > ./keys/{{ inventory_hostname }}.pub
+  args:
+    creates: "./keys/{{ inventory_hostname }}.pub"
 
 - name: Set host private key
   set_fact:
