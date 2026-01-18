@@ -1,8 +1,9 @@
----
+
 - name: Install WireGuard
   ansible.builtin.package:
     name: wireguard
     state: present
+  become: true
 
 - name: Create WireGuard directory on hosts
   ansible.builtin.file:
@@ -15,7 +16,7 @@
   delegate_to: localhost
   run_once: true
   ansible.builtin.file:
-    path: "./keys"
+    path: "{{ playbook_dir }}/keys"
     state: directory
     mode: '0700'
 
@@ -23,24 +24,27 @@
   delegate_to: localhost
   ansible.builtin.shell: |
     umask 077
-    openssl rand -base64 32 > ./keys/{{ inventory_hostname }}.key
+    openssl rand -base64 32 > "{{ playbook_dir }}/keys/{{ inventory_hostname }}.key"
   args:
-    creates: "./keys/{{ inventory_hostname }}.key"
+    creates: "{{ playbook_dir }}/keys/{{ inventory_hostname }}.key"
 
 - name: Generate WireGuard public key (local, CI-safe)
   delegate_to: localhost
   ansible.builtin.shell: |
-    base64 -d ./keys/{{ inventory_hostname }}.key | \
+    base64 -d "{{ playbook_dir }}/keys/{{ inventory_hostname }}.key" | \
     openssl pkey -pubout -inform DER -outform DER 2>/dev/null | \
-    base64 > ./keys/{{ inventory_hostname }}.pub
+    base64 > "{{ playbook_dir }}/keys/{{ inventory_hostname }}.pub"
   args:
-    creates: "./keys/{{ inventory_hostname }}.pub"
+    creates: "{{ playbook_dir }}/keys/{{ inventory_hostname }}.pub"
+
 
 - name: Set host private key
   set_fact:
-    wg_private_key: "{{ lookup('file', wg_key_dir + '/' + inventory_hostname + '.key') }}"
-  vars:
-    wg_key_dir: "./keys"
+    wg_private_key: "{{ lookup('file', playbook_dir + '/keys/' + inventory_hostname + '.key') }}"
+
+- name: Set host public key
+  set_fact:
+    wg_public_key: "{{ lookup('file', playbook_dir + '/keys/' + inventory_hostname + '.pub') }}"
 
 - name: Set host VPN IP
   set_fact:
@@ -51,11 +55,11 @@
     src: wg0.conf.j2
     dest: /etc/wireguard/wg0.conf
     mode: '0600'
-  vars:
-    wg_key_dir: "./keys"
+  become: true
 
 - name: Enable and start WireGuard
   ansible.builtin.systemd:
     name: wg-quick@wg0
     enabled: yes
     state: started
+  become: true
