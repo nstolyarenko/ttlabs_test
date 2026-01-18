@@ -1,22 +1,30 @@
 - hosts: all
-  gather_facts: no
+  gather_facts: false
+
   vars:
-    wg_key_dir: "./keys"   # local folder to store keys
+    wg_key_dir: "./keys"
+
   tasks:
     - name: Ensure key directory exists locally
-      local_action:
-        module: file
+      delegate_to: localhost
+      ansible.builtin.file:
         path: "{{ wg_key_dir }}"
         state: directory
         mode: '0700'
 
-    - name: Generate WireGuard key pair
-      local_action:
-        module: shell
-        cmd: |
-          mkdir -p {{ wg_key_dir }}
-          wg genkey | tee {{ wg_key_dir }}/{{ inventory_hostname }}.key | wg pubkey > {{ wg_key_dir }}/{{ inventory_hostname }}.pub
+    - name: Generate WireGuard private key
+      delegate_to: localhost
+      ansible.builtin.shell: |
+        umask 077
+        openssl rand -base64 32 > {{ wg_key_dir }}/{{ inventory_hostname }}.key
       args:
         creates: "{{ wg_key_dir }}/{{ inventory_hostname }}.key"
 
-
+    - name: Generate WireGuard public key
+      delegate_to: localhost
+      ansible.builtin.shell: |
+        base64 -d {{ wg_key_dir }}/{{ inventory_hostname }}.key | \
+        openssl pkey -pubout -inform DER -outform DER 2>/dev/null | \
+        base64 > {{ wg_key_dir }}/{{ inventory_hostname }}.pub
+      args:
+        creates: "{{ wg_key_dir }}/{{ inventory_hostname }}.pub"
